@@ -1,27 +1,32 @@
 package tulli.com.br.scrapingtool;
 
-import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @RestController
 @EnableWebMvc
 public class ScrapingController {
+
+	@Autowired
+	private ScrapingService scrapingService;
+
 	@RequestMapping(path = "/scraping/{user}/{repository}", method = RequestMethod.GET)
+	@ResponseBody
 	public Map<String, String> scrapingGit(@PathVariable("user") String user,
-			@PathVariable("repository") String repository) throws IOException, URISyntaxException {
+			@PathVariable("repository") String repository) throws URISyntaxException {
+
+		long start = System.currentTimeMillis();
 		String path = user + "/" + repository;
 
 		System.out.println("start on " + path);
@@ -29,31 +34,13 @@ public class ScrapingController {
 		Map<String, String> pong = new HashMap<>();
 		pong.put("git", path);
 
-		String body = getBodyFromUrl(path + "/file-list/master");
+		String body = scrapingService.getBodyFromUrl(path + "/file-list/master");
 
 		for (FileDetail file : getFilesFromPage(body)) {
 			System.out.println(file.toString());
 		}
-
+		System.out.println(System.currentTimeMillis() - start);
 		return pong;
-	}
-
-	private String getBodyFromUrl(String path) throws URISyntaxException {
-		System.out.println("geting page: " + path);
-		RestTemplate restTemplate = new RestTemplate();
-		URI uri;
-		try {
-			uri = new URI("https://github.com/" + path);
-			return restTemplate.getForEntity(uri, String.class).getBody();
-		} catch (HttpClientErrorException ex) {
-			if (ex.getStatusCode().is4xxClientError()) {
-				// if the request gets 404 so the working branch is "main" instead of "master"
-				path = path.replace("master", "main");
-				uri = new URI("https://github.com/" + path);
-				return restTemplate.getForEntity(uri, String.class).getBody();
-			}
-		}
-		return "";
 	}
 
 	private List<FileDetail> getFilesFromPage(String body) throws URISyntaxException {
@@ -75,11 +62,12 @@ public class ScrapingController {
 				continue;
 			}
 			if (filesDetail.get(i).isFolder()) {
-				String newHtml = getBodyFromUrl(filesDetail.get(i).getFileName().replace("/tree/", "/file-list/"));
+				String newHtml = scrapingService
+						.getBodyFromUrl(filesDetail.get(i).getFileName().replace("/tree/", "/file-list/"));
 				filesDetail.addAll(getFilesFromPage(newHtml));
 				filesDetail.get(i).setProcessed(true);
 			} else {
-				String data = getBodyFromUrl(filesDetail.get(i).getFileName());
+				String data = scrapingService.getBodyFromUrl(filesDetail.get(i).getFileName());
 				filesDetail.get(i).setLines(getLinesFromBody(data));
 				filesDetail.get(i).setSize(getSizeFromBody(data));
 				filesDetail.get(i).setProcessed(true);
@@ -116,4 +104,5 @@ public class ScrapingController {
 		}
 		return 0 + "";
 	}
+
 }
