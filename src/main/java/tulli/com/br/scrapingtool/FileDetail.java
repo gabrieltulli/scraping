@@ -68,7 +68,16 @@ public class FileDetail {
 	}
 
 	public String getExtension() {
-		return getFileName().substring(getFileName().lastIndexOf("."));
+		if (isFolder()) {
+			return "folder";
+		}
+		int dotPosition = getFileName().lastIndexOf(".");
+		if (dotPosition > 0) {
+			return getFileName().substring(dotPosition);
+		} else {
+			return getFileName().substring(getFileName().lastIndexOf("/") + 1);
+		}
+
 	}
 
 	public boolean isFolder() {
