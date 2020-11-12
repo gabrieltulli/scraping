@@ -25,7 +25,7 @@ public class ScrapingController {
 
 	@RequestMapping(path = "/scraping/{user}/{repository}", method = RequestMethod.GET)
 	@ResponseBody
-	public Map<String, Result> scrapingGit(@PathVariable("user") String user, @PathVariable("repository") String repository) throws URISyntaxException {
+	public Map<String, Result> scrapingGit(@PathVariable("user") String user, @PathVariable("repository") String repository) throws URISyntaxException, InterruptedException {
 		long start = System.currentTimeMillis();
 		String path = user + "/" + repository;
 
@@ -70,7 +70,7 @@ public class ScrapingController {
 		return filesDetail;
 	}
 
-	private void processFiles(ArrayList<FileDetail> filesDetail) throws URISyntaxException {
+	private void processFiles(ArrayList<FileDetail> filesDetail) throws URISyntaxException, InterruptedException {
 		for (int i = 0; i < filesDetail.size(); i++) {
 			if (filesDetail.get(i).isProcessed()) {
 				continue;
