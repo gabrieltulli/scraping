@@ -50,7 +50,7 @@ public class FileDetail {
 		} else if (size.contains("MB")) {
 			modifier = 1000 * 1000;
 		}
-		size = size.substring(0, size.indexOf(" ")).trim();
+		size = size.substring(0, size.indexOf(" ") - 1);
 		this.size = Double.parseDouble(size) * modifier;
 	}
 

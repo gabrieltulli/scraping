@@ -57,17 +57,15 @@ public class ScrapingController {
 	private ArrayList<FileDetail> getFilesFromPage(String body) {
 		String[] teste = body.split(" <div role=\"gridcell\" class=\"mr-3 flex-shrink-0\" style=\"width: 16px;\">");
 		LOG.info("searching for files in page; " + teste.length);
-		ArrayList<FileDetail> filesDetail = new ArrayList<>();
+		ArrayList<FileDetail> listOfFiles = new ArrayList<>();
 		for (int i = 1; i < teste.length; i++) {
 			int hrefPos = teste[i].indexOf("href");
 			int finalPos = teste[i].indexOf("\">", hrefPos);
 			String fileName = teste[i].substring(hrefPos + 6, finalPos);
 
-			FileDetail fileDetail = new FileDetail(fileName);
-
-			filesDetail.add(fileDetail);
+			listOfFiles.add(new FileDetail(fileName));
 		}
-		return filesDetail;
+		return listOfFiles;
 	}
 
 	private void processFiles(ArrayList<FileDetail> filesDetail) throws URISyntaxException, InterruptedException {
@@ -89,28 +87,28 @@ public class ScrapingController {
 	}
 
 	private int getLinesFromBody(String body) {
-		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
-		for (int i = 0; i < lines.length; i++) {
-			String aux = lines[i].trim();
-			if (aux.matches("^\\d+ lines.*")) {
-
-				aux = aux.substring(0, aux.indexOf("lines")).trim();
-
-				return Integer.parseInt(aux);
+		String[] lines = splitBodyinLines(body);
+		for (String line : lines) {
+			String aux = line.trim();
+			if (line.trim().matches("^\\d+ lines.*")) {
+				return Integer.parseInt(aux.substring(0, aux.indexOf("lines") - 1));
 			}
 		}
 		return 0;
 	}
 
 	private String getSizeFromBody(String body) {
-		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
-		for (int i = 0; i < lines.length; i++) {
-			String aux = lines[i].trim();
+		String[] lines = splitBodyinLines(body);
+		for (String line : lines) {
+			String aux = line.trim();
 			if (aux.length() > 1 && aux.matches("^\\d+\\.?\\d+\\s+[MKBytes]+")) {
 				return aux;
 			}
 		}
-		return 0 + "";
+		return "0";
 	}
 
+	private String[] splitBodyinLines(String body) {
+		return body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
+	}
 }
