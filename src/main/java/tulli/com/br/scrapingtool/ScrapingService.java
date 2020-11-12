@@ -27,7 +27,7 @@ public class ScrapingService {
 		} catch (HttpClientErrorException ex) {
 			if (ex.getStatusCode().is4xxClientError()) {
 				// if the request gets 404 so the working branch is "main" instead of "master"
-				path = path.replace("master", "main");
+				path = path.replaceFirst("/master/", "/main/");
 				uri = new URI("https://github.com/" + path);
 				Thread.sleep(50);
 				return restTemplate.getForEntity(uri, String.class).getBody();
