@@ -2,6 +2,7 @@ package tulli.com.br.scrapingtool;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 
 import org.apache.log4j.Logger;
 import org.springframework.cache.annotation.Cacheable;
@@ -16,7 +17,7 @@ public class ScrapingService {
 
 	@Cacheable("bodies")
 //	@Async
-	public String getBodyFromUrl(String path) {
+	public String getBodyFromUrl(String path) throws Exception {
 		LOG.info("geting page: " + path);
 		RestTemplate restTemplate = new RestTemplate();
 		URI uri;
@@ -27,12 +28,13 @@ public class ScrapingService {
 		} catch (HttpClientErrorException ex) {
 			if (ex.getStatusCode().is4xxClientError()) {
 				System.out.println("tooooo many redirects");
+				throw new Exception(MessageFormat.format("status code: {0}", ex.getStatusCode()));
 			}
 		} catch (URISyntaxException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		return "";
+		return null;
 	}
 }
