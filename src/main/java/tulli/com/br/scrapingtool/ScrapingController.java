@@ -70,7 +70,7 @@ public class ScrapingController {
 					Thread.sleep(timeout * tries);
 				} catch (InterruptedException e1) {
 					LOG.error("Error on getting page", e1);
-					Thread.currentThread().interrupt();
+//					Thread.currentThread().interrupt();
 				}
 				tries++;
 			}
@@ -118,6 +118,8 @@ public class ScrapingController {
 
 	private int getLinesFromBody(String body) {
 		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
+		body = null;
+
 		Pattern pattern = Pattern.compile("\\s*(\\d+) lines.*", Pattern.CASE_INSENSITIVE);
 		for (String line : lines) {
 			Matcher matcher = pattern.matcher(line);
@@ -130,6 +132,8 @@ public class ScrapingController {
 
 	private String getSizeFromBody(String body) {
 		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
+		body = null;
+
 		Pattern pattern = Pattern.compile("\\s*(\\d+\\.?\\d+)\\s+([MKByte]+)", Pattern.CASE_INSENSITIVE);
 		for (String line : lines) {
 			Matcher matcher = pattern.matcher(line);

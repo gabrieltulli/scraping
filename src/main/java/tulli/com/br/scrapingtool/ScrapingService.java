@@ -26,7 +26,6 @@ public class ScrapingService {
 			return restTemplate.getForEntity(uri, String.class).getBody();
 		} catch (HttpClientErrorException ex) {
 			if (ex.getStatusCode().is4xxClientError()) {
-				System.out.println("tooooo many redirects");
 				throw new Exception(MessageFormat.format("status code: {0}", ex.getStatusCode()));
 			}
 		} catch (URISyntaxException e) {
