@@ -1,6 +1,5 @@
 package tulli.com.br.scrapingtool;
 
-import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +27,7 @@ public class ScrapingController {
 
 	@RequestMapping(path = "/scraping/{user}/{repository}", method = RequestMethod.GET)
 	@ResponseBody
-	public Map<String, Result> scrapingGit(@PathVariable("user") String user, @PathVariable("repository") String repository) throws URISyntaxException, InterruptedException {
+	public Map<String, Result> scrapingGit(@PathVariable("user") String user, @PathVariable("repository") String repository) {
 		long start = System.currentTimeMillis();
 		String path = user + "/" + repository;
 		LOG.info("start on " + path);
@@ -114,12 +113,6 @@ public class ScrapingController {
 				return matcher.group(1) + " " + matcher.group(2);
 			}
 		}
-//		for (String line : lines) {
-//			String aux = line.trim();
-//			if (aux.length() > 1 && aux.matches("^\\d+\\.?\\d+\\s+[MKBytes]+")) {
-//				return aux;
-//			}
-//		}
 		return "0";
 	}
 }
