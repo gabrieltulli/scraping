@@ -33,7 +33,7 @@ public class ScrapingController {
 		LOG.info("start on " + path);
 
 		String defaultBranch = getDefaultBranch(path);
-		String body = extracted(path + "/file-list/" + defaultBranch);
+		String body = getBodyFromUrl(path + "/file-list/" + defaultBranch);
 
 		ArrayList<FileDetail> filesDetail = getFilesFromPage(body);
 		processFiles(filesDetail);
@@ -54,22 +54,32 @@ public class ScrapingController {
 		return summary;
 	}
 
-	private String extracted(String path) {
+	private String getBodyFromUrl(String path) {
 		String body = "";
 		boolean error = false;
+		long timeout = 10;
+		int tries = 0;
 		do {
 			try {
 				body = scrapingService.getBodyFromUrl(path);
 			} catch (Exception e) {
 				e.printStackTrace();
+				LOG.error(e.getMessage());
 				error = true;
+				try {
+					Thread.sleep(timeout * tries);
+				} catch (InterruptedException e1) {
+					LOG.error("Error on getting page", e1);
+					Thread.currentThread().interrupt();
+				}
+				tries++;
 			}
 		} while (error);
 		return body;
 	}
 
 	private String getDefaultBranch(String path) {
-		String mainPage = extracted(path);
+		String mainPage = getBodyFromUrl(path);
 		int startPos = mainPage.indexOf("commits/");
 		return mainPage.substring(startPos + 8, mainPage.indexOf(".atom", startPos));
 	}
@@ -94,11 +104,11 @@ public class ScrapingController {
 				continue;
 			}
 			if (filesDetail.get(i).isFolder()) {
-				String newHtml = extracted(filesDetail.get(i).getDirectoryName());
+				String newHtml = getBodyFromUrl(filesDetail.get(i).getDirectoryName());
 				filesDetail.addAll(getFilesFromPage(newHtml));
 				filesDetail.get(i).setProcessed(true);
 			} else {
-				String data = extracted(filesDetail.get(i).getFileName());
+				String data = getBodyFromUrl(filesDetail.get(i).getFileName());
 				filesDetail.get(i).setLines(getLinesFromBody(data));
 				filesDetail.get(i).setSize(getSizeFromBody(data));
 				filesDetail.get(i).setProcessed(true);

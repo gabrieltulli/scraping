@@ -23,7 +23,6 @@ public class ScrapingService {
 		URI uri;
 		try {
 			uri = new URI("https://github.com/" + path);
-			Thread.sleep(50);
 			return restTemplate.getForEntity(uri, String.class).getBody();
 		} catch (HttpClientErrorException ex) {
 			if (ex.getStatusCode().is4xxClientError()) {
@@ -31,8 +30,6 @@ public class ScrapingService {
 				throw new Exception(MessageFormat.format("status code: {0}", ex.getStatusCode()));
 			}
 		} catch (URISyntaxException e) {
-			e.printStackTrace();
-		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		return null;
