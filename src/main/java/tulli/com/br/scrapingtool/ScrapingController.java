@@ -62,15 +62,15 @@ public class ScrapingController {
 		do {
 			try {
 				body = scrapingService.getBodyFromUrl(path);
+				error = false;
 			} catch (Exception e) {
-				e.printStackTrace();
 				LOG.error(e.getMessage());
 				error = true;
 				try {
 					Thread.sleep(timeout * tries);
 				} catch (InterruptedException e1) {
 					LOG.error("Error on getting page", e1);
-//					Thread.currentThread().interrupt();
+					Thread.currentThread().interrupt();
 				}
 				tries++;
 			}
