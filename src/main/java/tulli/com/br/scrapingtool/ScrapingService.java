@@ -5,8 +5,6 @@ import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 import org.springframework.cache.annotation.Cacheable;
@@ -19,8 +17,6 @@ public class ScrapingService {
 
 	private static final Logger LOG = Logger.getLogger(ScrapingService.class);
 
-//	@Cacheable("bodies")
-//	@Async
 	public String getBodyFromUrl(String path) throws Exception {
 		LOG.info(MessageFormat.format("geting page: {0}", path));
 		RestTemplate restTemplate = new RestTemplate();
@@ -38,15 +34,13 @@ public class ScrapingService {
 		return null;
 	}
 
-	private String getBodyFromUrlRetry(String path) {
-		String body = "";
+	private BodyHtml getBodyFromUrlRetry(String path) {
 		boolean error = false;
 		long timeout = 50;
 		int tries = 0;
 		do {
 			try {
-				body = getBodyFromUrl(path);
-				error = false;
+				return new BodyHtml(getBodyFromUrl(path));
 			} catch (Exception e) {
 				LOG.error(e.getMessage());
 				error = true;
@@ -59,38 +53,33 @@ public class ScrapingService {
 				tries++;
 			}
 		} while (error);
-		return body;
+		return new BodyHtml();
 	}
 
 	@Cacheable("files")
 	public List<FileDetail> extractFilesFromRepository(String path) {
 		LOG.info(MessageFormat.format("geting files from: {0}", path));
 		String defaultBranch = getDefaultBranch(path);
-		String body = getBodyFromUrlRetry(path + "/file-list/" + defaultBranch);
 
-		ArrayList<FileDetail> filesDetail = getFilesFromPage(body);
+		ArrayList<FileDetail> filesDetail = new ArrayList<>();
+
+		BodyHtml body = getBodyFromUrlRetry(path + "/file-list/" + defaultBranch);
+		filesDetail.addAll(body.getFiles());
+
 		processFiles(filesDetail);
+
+		for (FileDetail temp : filesDetail) {
+			if (!temp.isProcessed()) {
+				LOG.info(temp.toString());
+			}
+		}
 		return filesDetail;
 	}
 
 	private String getDefaultBranch(String path) {
-		String mainPage = getBodyFromUrlRetry(path);
+		String mainPage = getBodyFromUrlRetry(path).getBody();
 		int startPos = mainPage.indexOf("commits/");
 		return mainPage.substring(startPos + 8, mainPage.indexOf(".atom", startPos));
-	}
-
-	private ArrayList<FileDetail> getFilesFromPage(String body) {
-		String[] teste = body.split(" <div role=\"gridcell\" class=\"mr-3 flex-shrink-0\" style=\"width: 16px;\">");
-		LOG.info("searching for files in page; " + teste.length);
-		ArrayList<FileDetail> listOfFiles = new ArrayList<>();
-		for (int i = 1; i < teste.length; i++) {
-			int hrefPos = teste[i].indexOf("href");
-			int finalPos = teste[i].indexOf("\">", hrefPos);
-			String fileName = teste[i].substring(hrefPos + 6, finalPos);
-
-			listOfFiles.add(new FileDetail(fileName));
-		}
-		return listOfFiles;
 	}
 
 	private void processFiles(ArrayList<FileDetail> filesDetail) {
@@ -99,33 +88,16 @@ public class ScrapingService {
 				continue;
 			}
 			if (filesDetail.get(i).isFolder()) {
-				String newHtml = getBodyFromUrlRetry(filesDetail.get(i).getDirectoryName());
-				filesDetail.addAll(getFilesFromPage(newHtml));
+				BodyHtml page = getBodyFromUrlRetry(filesDetail.get(i).getDirectoryName());
+				filesDetail.addAll(page.getFiles());
 				filesDetail.get(i).setProcessed(true);
 			} else {
-				String data = getBodyFromUrlRetry(filesDetail.get(i).getFileName());
-				filesDetail.get(i).setLines(getLinesFromBody(data));
-				filesDetail.get(i).setSize(getSizeFromBody(data));
+				BodyHtml data = getBodyFromUrlRetry(filesDetail.get(i).getFileName());
+				filesDetail.get(i).setLines(data.getLines());
+				filesDetail.get(i).setSize(data.getSize());
 				filesDetail.get(i).setProcessed(true);
 			}
 		}
 	}
 
-	private int getLinesFromBody(String body) {
-		Pattern pattern = Pattern.compile("\\s*(\\d+) lines \\(.*", Pattern.CASE_INSENSITIVE);
-		Matcher matcher = pattern.matcher(body);
-		if (matcher.find()) {
-			return Integer.parseInt(matcher.group(1));
-		}
-		return 0;
-	}
-
-	private String getSizeFromBody(String body) {
-		Pattern pattern = Pattern.compile("\\s{4}(\\d+\\.?\\d+)\\s+([MKByte]+)", Pattern.CASE_INSENSITIVE);
-		Matcher matcher = pattern.matcher(body);
-		if (matcher.find()) {
-			return matcher.group(1) + " " + matcher.group(2);
-		}
-		return "0";
-	}
 }
