@@ -57,7 +57,7 @@ public class ScrapingController {
 	private String getBodyFromUrl(String path) {
 		String body = "";
 		boolean error = false;
-		long timeout = 10;
+		long timeout = 50;
 		int tries = 0;
 		do {
 			try {
@@ -117,29 +117,19 @@ public class ScrapingController {
 	}
 
 	private int getLinesFromBody(String body) {
-		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
-		body = null;
-
-		Pattern pattern = Pattern.compile("\\s*(\\d+) lines.*", Pattern.CASE_INSENSITIVE);
-		for (String line : lines) {
-			Matcher matcher = pattern.matcher(line);
-			if (matcher.find()) {
-				return Integer.parseInt(matcher.group(1));
-			}
+		Pattern pattern = Pattern.compile("\\s*(\\d+) lines \\(.*", Pattern.CASE_INSENSITIVE);
+		Matcher matcher = pattern.matcher(body);
+		if (matcher.find()) {
+			return Integer.parseInt(matcher.group(1));
 		}
 		return 0;
 	}
 
 	private String getSizeFromBody(String body) {
-		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
-		body = null;
-
-		Pattern pattern = Pattern.compile("\\s*(\\d+\\.?\\d+)\\s+([MKByte]+)", Pattern.CASE_INSENSITIVE);
-		for (String line : lines) {
-			Matcher matcher = pattern.matcher(line);
-			if (matcher.find()) {
-				return matcher.group(1) + " " + matcher.group(2);
-			}
+		Pattern pattern = Pattern.compile("\\s{4}(\\d+\\.?\\d+)\\s+([MKByte]+)", Pattern.CASE_INSENSITIVE);
+		Matcher matcher = pattern.matcher(body);
+		if (matcher.find()) {
+			return matcher.group(1) + " " + matcher.group(2);
 		}
 		return "0";
 	}
