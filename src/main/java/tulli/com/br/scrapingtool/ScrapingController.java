@@ -1,9 +1,12 @@
 package tulli.com.br.scrapingtool;
 
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,13 +31,10 @@ public class ScrapingController {
 	public Map<String, Result> scrapingGit(@PathVariable("user") String user, @PathVariable("repository") String repository) throws URISyntaxException, InterruptedException {
 		long start = System.currentTimeMillis();
 		String path = user + "/" + repository;
-
 		LOG.info("start on " + path);
 
-		Map<String, String> pong = new HashMap<>();
-		pong.put("git", path);
-
-		String body = scrapingService.getBodyFromUrl(path + "/file-list/master");
+		String defaultBranch = getDefaultBranch(path);
+		String body = scrapingService.getBodyFromUrl(path + "/file-list/" + defaultBranch);
 
 		ArrayList<FileDetail> filesDetail = getFilesFromPage(body);
 		processFiles(filesDetail);
@@ -45,13 +45,20 @@ public class ScrapingController {
 				if (summary.containsKey(file.getExtension())) {
 					summary.get(file.getExtension()).addTotalLines(file.getLines());
 					summary.get(file.getExtension()).addTotalSize(file.getSize());
+					summary.get(file.getExtension()).addQuantity();
 				} else {
 					summary.put(file.getExtension(), new Result(file.getLines(), file.getSize()));
 				}
 			}
 		}
-		LOG.info(System.currentTimeMillis() - start);
+		LOG.info(MessageFormat.format("duration: {0}ms", System.currentTimeMillis() - start));
 		return summary;
+	}
+
+	private String getDefaultBranch(String path) {
+		String mainPage = scrapingService.getBodyFromUrl(path);
+		int startPos = mainPage.indexOf("commits/");
+		return mainPage.substring(startPos + 8, mainPage.indexOf(".atom", startPos));
 	}
 
 	private ArrayList<FileDetail> getFilesFromPage(String body) {
@@ -68,13 +75,13 @@ public class ScrapingController {
 		return listOfFiles;
 	}
 
-	private void processFiles(ArrayList<FileDetail> filesDetail) throws URISyntaxException, InterruptedException {
+	private void processFiles(ArrayList<FileDetail> filesDetail) {
 		for (int i = 0; i < filesDetail.size(); i++) {
 			if (filesDetail.get(i).isProcessed()) {
 				continue;
 			}
 			if (filesDetail.get(i).isFolder()) {
-				String newHtml = scrapingService.getBodyFromUrl(filesDetail.get(i).getFileName().replace("/tree/", "/file-list/"));
+				String newHtml = scrapingService.getBodyFromUrl(filesDetail.get(i).getDirectoryName());
 				filesDetail.addAll(getFilesFromPage(newHtml));
 				filesDetail.get(i).setProcessed(true);
 			} else {
@@ -87,28 +94,32 @@ public class ScrapingController {
 	}
 
 	private int getLinesFromBody(String body) {
-		String[] lines = splitBodyinLines(body);
+		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
+		Pattern pattern = Pattern.compile("\\s*(\\d+) lines.*", Pattern.CASE_INSENSITIVE);
 		for (String line : lines) {
-			String aux = line.trim();
-			if (line.trim().matches("^\\d+ lines.*")) {
-				return Integer.parseInt(aux.substring(0, aux.indexOf("lines") - 1));
+			Matcher matcher = pattern.matcher(line);
+			if (matcher.find()) {
+				return Integer.parseInt(matcher.group(1));
 			}
 		}
 		return 0;
 	}
 
 	private String getSizeFromBody(String body) {
-		String[] lines = splitBodyinLines(body);
+		String[] lines = body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
+		Pattern pattern = Pattern.compile("\\s*(\\d+\\.?\\d+)\\s+([MKByte]+)", Pattern.CASE_INSENSITIVE);
 		for (String line : lines) {
-			String aux = line.trim();
-			if (aux.length() > 1 && aux.matches("^\\d+\\.?\\d+\\s+[MKBytes]+")) {
-				return aux;
+			Matcher matcher = pattern.matcher(line);
+			if (matcher.find()) {
+				return matcher.group(1) + " " + matcher.group(2);
 			}
 		}
+//		for (String line : lines) {
+//			String aux = line.trim();
+//			if (aux.length() > 1 && aux.matches("^\\d+\\.?\\d+\\s+[MKBytes]+")) {
+//				return aux;
+//			}
+//		}
 		return "0";
-	}
-
-	private String[] splitBodyinLines(String body) {
-		return body.split("Box-header py-2 d-flex flex-column flex-shrink-0 flex-md-row flex-md-items-center")[1].split("\n");
 	}
 }

@@ -5,7 +5,6 @@ public class FileDetail {
 	private String fileName;
 	private int lines;
 	private double size;
-	private String type;
 	private boolean processed;
 
 	public FileDetail() {
@@ -17,14 +16,12 @@ public class FileDetail {
 		this.fileName = fileName;
 	}
 
-	public FileDetail(String fileName, String type) {
-		super();
-		this.fileName = fileName;
-		this.type = type;
-	}
-
 	public String getFileName() {
 		return fileName;
+	}
+
+	public String getDirectoryName() {
+		return fileName.replace("tree", "file-list");
 	}
 
 	public void setFileName(String fileName) {
@@ -54,19 +51,6 @@ public class FileDetail {
 		this.size = Double.parseDouble(size) * modifier;
 	}
 
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	@Override
-	public String toString() {
-		return "FileDetail [fileName=" + fileName + ", lines=" + lines + ", size=" + size + "]";
-	}
-
 	public String getExtension() {
 		if (isFolder()) {
 			return "folder";
@@ -77,7 +61,6 @@ public class FileDetail {
 		} else {
 			return getFileName().substring(getFileName().lastIndexOf("/") + 1);
 		}
-
 	}
 
 	public boolean isFolder() {
@@ -99,4 +82,10 @@ public class FileDetail {
 	public void setLines(int lines) {
 		this.lines = lines;
 	}
+
+	@Override
+	public String toString() {
+		return "FileDetail [fileName=" + fileName + ", lines=" + lines + ", size=" + size + "]";
+	}
+
 }

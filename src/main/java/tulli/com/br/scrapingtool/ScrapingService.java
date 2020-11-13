@@ -16,7 +16,7 @@ public class ScrapingService {
 
 	@Cacheable("bodies")
 //	@Async
-	public String getBodyFromUrl(String path) throws URISyntaxException, InterruptedException {
+	public String getBodyFromUrl(String path) {
 		LOG.info("geting page: " + path);
 		RestTemplate restTemplate = new RestTemplate();
 		URI uri;
@@ -26,12 +26,12 @@ public class ScrapingService {
 			return restTemplate.getForEntity(uri, String.class).getBody();
 		} catch (HttpClientErrorException ex) {
 			if (ex.getStatusCode().is4xxClientError()) {
-				// if the request gets 404 so the working branch is "main" instead of "master"
-				path = path.replaceFirst("/master/", "/main/");
-				uri = new URI("https://github.com/" + path);
-				Thread.sleep(50);
-				return restTemplate.getForEntity(uri, String.class).getBody();
+				System.out.println("tooooo many redirects");
 			}
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 		return "";
 	}
