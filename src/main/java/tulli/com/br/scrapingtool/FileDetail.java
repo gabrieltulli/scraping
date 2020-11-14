@@ -43,11 +43,13 @@ public class FileDetail {
 		}
 		int modifier = 1;
 		if (size.contains("KB")) {
-			modifier = 1000;
+			modifier = 1024;
 		} else if (size.contains("MB")) {
-			modifier = 1000 * 1000;
+			modifier = 1024 * 1024;
+		} else if (size.contains("GB")) {
+			modifier = 1024 * 1024 * 1024;
 		}
-		size = size.substring(0, size.indexOf(" ") - 1);
+		size = size.substring(0, size.indexOf(" "));
 		this.size = Double.parseDouble(size) * modifier;
 	}
 
